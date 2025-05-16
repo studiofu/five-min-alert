@@ -111,7 +111,7 @@ class AlertApp:
         while self.is_running:
             now = datetime.now()
             # Update current time
-            self.clock_label.config(text=f"Current Time: {now.strftime('%H:%M:%S')}")
+            self.clock_label.config(text=f"Current Time: {now.strftime('%H:%M:%S')}", font=("Arial", 18))
 
             # Calculate countdown to next 5-minute mark
             current_minute = now.minute
@@ -131,5 +131,5 @@ class AlertApp:
 if __name__ == "__main__":
     root = tk.Tk()
     app = AlertApp(root)
-    root.geometry("250x300")
+    root.geometry("280x300")
     root.mainloop()
