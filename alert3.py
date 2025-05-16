@@ -26,6 +26,13 @@ class AlertApp:
             print("hour_alert.wav not found, using fallback message")
             self.hour_alert_sound = None
 
+        # Set initial volume (0.5 = 50%)
+        self.volume = 0.5
+        if self.alert_sound:
+            self.alert_sound.set_volume(self.volume)
+        if self.hour_alert_sound:
+            self.hour_alert_sound.set_volume(self.volume)
+
         # GUI Elements
         # Frame for buttons at the top
         self.button_frame = tk.Frame(root)
@@ -40,6 +47,22 @@ class AlertApp:
         self.clock_label = tk.Label(root, text="Current Time: --:--:--")
         self.clock_label.pack(pady=5)
 
+        # Volume control slider
+        self.volume_frame = tk.Frame(root)
+        self.volume_frame.pack(pady=5)
+        self.volume_label = tk.Label(self.volume_frame, text="Volume:")
+        self.volume_label.pack(side=tk.LEFT)
+        self.volume_slider = tk.Scale(
+            self.volume_frame,
+            from_=0,
+            to=100,
+            orient=tk.HORIZONTAL,
+            length=150,
+            command=self.update_volume
+        )
+        self.volume_slider.set(self.volume * 100)  # Set initial slider position
+        self.volume_slider.pack(side=tk.LEFT, padx=5)
+
         # Canvas for circular countdown
         self.canvas = tk.Canvas(root, width=150, height=150)
         self.canvas.pack(pady=5)
@@ -51,6 +74,14 @@ class AlertApp:
         )
         # Countdown text (mm:ss)
         self.countdown_text = self.canvas.create_text(75, 75, text="--:--", font=("Arial", 16))
+
+    def update_volume(self, value):
+        # Update volume based on slider position (0-100 scale converted to 0.0-1.0)
+        self.volume = float(value) / 100
+        if self.alert_sound:
+            self.alert_sound.set_volume(self.volume)
+        if self.hour_alert_sound:
+            self.hour_alert_sound.set_volume(self.volume)
 
     def start_alerts(self):
         if not self.is_running:
@@ -131,5 +162,5 @@ class AlertApp:
 if __name__ == "__main__":
     root = tk.Tk()
     app = AlertApp(root)
-    root.geometry("280x300")
+    root.geometry("280x350")  # Increased height to accommodate volume slider
     root.mainloop()
