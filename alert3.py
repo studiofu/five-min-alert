@@ -1,9 +1,8 @@
 import tkinter as tk
-from datetime import datetime, timedelta
+from datetime import datetime
 import threading
 import time
 import pygame
-import math
 
 class AlertApp:
     def __init__(self, root):
@@ -18,12 +17,12 @@ class AlertApp:
         try:
             self.alert_sound = pygame.mixer.Sound("alert_digdong.mp3")
         except FileNotFoundError:
-            print("alert.wav not found, using fallback message")
+            print("alert_digdong.mp3 not found, using fallback message")
             self.alert_sound = None
         try:
             self.hour_alert_sound = pygame.mixer.Sound("alert_dodo.mp3")
         except FileNotFoundError:
-            print("hour_alert.wav not found, using fallback message")
+            print("alert_dodo.mp3 not found, using fallback message")
             self.hour_alert_sound = None
 
         self.volume = 0.5
@@ -32,10 +31,20 @@ class AlertApp:
         if self.hour_alert_sound:
             self.hour_alert_sound.set_volume(self.volume)
 
-        # --- Mobile-like UI Design ---
+        self.setup_ui()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
-        # Header bar
-        self.header = tk.Frame(root, bg="#1976D2", height=60)
+    def setup_ui(self):
+        self.setup_header()
+        self.setup_timer()
+        self.setup_clock()
+        self.setup_status()
+        self.setup_buttons()
+        self.setup_volume()
+        self.root.configure(bg="white")
+
+    def setup_header(self):
+        self.header = tk.Frame(self.root, bg="#1976D2", height=60)
         self.header.pack(fill=tk.X)
         self.header_label = tk.Label(
             self.header, text="5-Minute Alert", fg="white", bg="#1976D2",
@@ -43,8 +52,8 @@ class AlertApp:
         )
         self.header_label.pack(pady=10)
 
-        # Countdown timer (large and centered)
-        self.timer_frame = tk.Frame(root, bg="white")
+    def setup_timer(self):
+        self.timer_frame = tk.Frame(self.root, bg="white")
         self.timer_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
         self.canvas = tk.Canvas(self.timer_frame, width=180, height=180, bg="white", highlightthickness=0)
         self.canvas.pack(pady=10)
@@ -53,23 +62,23 @@ class AlertApp:
             20, 20, 160, 160, start=90, extent=0, fill="#1976D2", outline="#1976D2"
         )
         self.countdown_text = self.canvas.create_text(
-            90, 90, text="--:--", font=("Segoe UI", 32, "bold"), fill="#212121"  # Changed color to dark gray
+            90, 90, text="--:--", font=("Segoe UI", 32, "bold"), fill="#212121"
         )
 
-        # Current time
+    def setup_clock(self):
         self.clock_label = tk.Label(
-            root, text="Current Time: --:--:--", font=("Segoe UI", 16), bg="white", fg="#1976D2"
+            self.root, text="Current Time: --:--:--", font=("Segoe UI", 16), bg="white", fg="#1976D2"
         )
         self.clock_label.pack(pady=(0, 10))
 
-        # Status label
+    def setup_status(self):
         self.status_label = tk.Label(
-            root, text="Status: Stopped", font=("Segoe UI", 14), bg="white", fg="#757575"
+            self.root, text="Status: Stopped", font=("Segoe UI", 14), bg="white", fg="#757575"
         )
         self.status_label.pack(pady=(0, 10))
 
-        # Start/Stop buttons (large, rounded)
-        self.button_frame = tk.Frame(root, bg="white")
+    def setup_buttons(self):
+        self.button_frame = tk.Frame(self.root, bg="white")
         self.button_frame.pack(pady=10)
         self.start_button = tk.Button(
             self.button_frame, text="Start", command=self.start_alerts,
@@ -86,8 +95,8 @@ class AlertApp:
         )
         self.stop_button.pack(side=tk.LEFT, padx=10)
 
-        # Volume slider (styled)
-        self.volume_frame = tk.Frame(root, bg="white")
+    def setup_volume(self):
+        self.volume_frame = tk.Frame(self.root, bg="white")
         self.volume_frame.pack(pady=10)
         self.volume_label = tk.Label(
             self.volume_frame, text="Volume:", font=("Segoe UI", 12), bg="white", fg="#1976D2"
@@ -99,9 +108,6 @@ class AlertApp:
         )
         self.volume_slider.set(self.volume * 100)
         self.volume_slider.pack(side=tk.LEFT, padx=5)
-
-        # Set background color for root
-        root.configure(bg="white")
 
     def update_volume(self, value):
         self.volume = float(value) / 100
@@ -118,6 +124,7 @@ class AlertApp:
             self.status_label.config(text="Status: Running")
 
             if self.alert_sound:
+                self.alert_sound.stop()
                 self.alert_sound.play()
             else:
                 print("Beep! (Start)")
@@ -148,16 +155,22 @@ class AlertApp:
             if current_minute % 5 == 0 and current_second < 5:
                 if current_minute == 0:
                     if self.hour_alert_sound:
+                        self.hour_alert_sound.stop()
                         self.hour_alert_sound.play()
                     else:
                         print("Hour Beep!")
-                    self.status_label.config(text=f"Hour Alert at {now.strftime('%H:%M')}")
+                    self.root.after(0, lambda: self.status_label.config(
+                        text=f"Hour Alert at {now.strftime('%H:%M')}"
+                    ))
                 else:
                     if self.alert_sound:
+                        self.alert_sound.stop()
                         self.alert_sound.play()
                     else:
                         print("Beep!")
-                    self.status_label.config(text=f"Alert at {now.strftime('%H:%M')}")
+                    self.root.after(0, lambda: self.status_label.config(
+                        text=f"Alert at {now.strftime('%H:%M')}"
+                    ))
                 time.sleep(60)
             else:
                 time.sleep(1)
@@ -165,20 +178,30 @@ class AlertApp:
     def update_clock_and_countdown(self):
         while self.is_running:
             now = datetime.now()
-            self.clock_label.config(text=f"Current Time: {now.strftime('%H:%M:%S')}")
+            self.root.after(0, lambda: self.clock_label.config(
+                text=f"Current Time: {now.strftime('%H:%M:%S')}"
+            ))
 
             current_minute = now.minute
             current_second = now.second
             seconds_since_last_mark = (current_minute % 5) * 60 + current_second
             seconds_to_next_mark = (5 * 60) - seconds_since_last_mark
             minutes, seconds = divmod(seconds_to_next_mark, 60)
-            self.canvas.itemconfig(self.countdown_text, text=f"{minutes:02d}:{seconds:02d}")
+            self.root.after(0, lambda: self.canvas.itemconfig(
+                self.countdown_text, text=f"{minutes:02d}:{seconds:02d}"
+            ))
 
             fraction_remaining = seconds_to_next_mark / (5 * 60)
             arc_extent = 360 * fraction_remaining
-            self.canvas.itemconfig(self.countdown_arc, extent=-arc_extent)
+            self.root.after(0, lambda: self.canvas.itemconfig(
+                self.countdown_arc, extent=-arc_extent
+            ))
 
             time.sleep(1)
+
+    def on_close(self):
+        self.is_running = False
+        self.root.destroy()
 
 if __name__ == "__main__":
     root = tk.Tk()
